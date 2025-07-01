@@ -1,0 +1,664 @@
+@import 'fonts';
+body{
+    font-family: $roboto;
+}
+$spacer: 1rem;
+.own-container{
+    padding-left: ($spacer*5)!important;
+    padding-right: ($spacer*5)!important;
+    @media (max-width: 1400px){
+        padding-left: 30px !important;
+        padding-right: 30px !important;
+    }
+}
+/* ----------------------- header ------------------------------------- */
+header{
+    height: 80px;
+    border-bottom: solid 1px rgba(0,0,0,.3);
+    .logo, .right-bar{
+        flex: 1 0 100px;
+        padding: 15px 0px;
+    }
+    .searchbar{
+        flex: 0 1 auto;
+        border: solid 1px rgba(0,0,0,.2);
+        border-radius: 40px;
+        box-shadow: 0 3px 5px rgba(0,0,0,.2);
+    }
+}
+.nav-list{
+    list-style: none;
+    display: flex;
+    margin-left: auto;
+    padding-right: 75px;
+}
+/* ----------------------- search bar ------------------------------------- */
+.searchbar{
+    text-align: center;
+    .search{
+        border: solid 1px rgba(0,0,0,.1);
+        border-radius: 40px;
+        font-size: 16px;
+    }
+    button{
+        padding: 5px 0px;
+        position: relative;
+        a{
+            display: inline-block;
+            background-color: #a07208;
+            width: 32px;
+            height: 32px;
+            border-radius: 25px;
+            ion-icon{
+                color: white;
+                font-size: 20px;
+            }
+        }
+    }
+}
+.right-bar{
+    .left-nav{
+        margin-bottom: 0px;
+        li{
+            a{
+                display: inline-block;
+                padding: 10px;
+                text-decoration: none;
+                font-weight: 500;
+                color: black;
+                border-radius: 20px;
+                &:hover{
+                    background: rgba(0,0,0,.05);
+                }
+            }
+            &:last-child{
+                a{
+                    padding: 14px;
+                    margin-right: 15px;
+                }
+            }
+        }
+    }
+    .dropdown{
+        .btn{
+            border: solid 1px rgba(0,0,0,.1);
+            border-radius: 40px;
+            .hamburger{
+                span{
+                    display: block;
+                    width: 16px;
+                    height: 2px;
+                    background:#000;
+                    &:nth-child(2){
+                        margin: 3px 0;
+                    }
+                }
+            }
+            img{
+                opacity: .5;
+            }
+            &:after{
+                display:none;
+
+            }
+            &.show, &:hover{
+                box-shadow: 0 4px 12px rgba(0,0,0,.1);
+            }
+        } 
+        ul.dropdown-menu{
+            width: 240px;
+            border: none;
+            box-shadow: 0 3px 5px rgba(0,0,0,.2);
+            top: 13px !important;
+            ul{
+                li{
+                    a{
+                        display: block;
+                        padding: 10px 15px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+.main-content {
+    .results {
+        .row{
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            .property {
+                position: relative;
+                
+                .property-images {
+                    overflow: hidden;
+                    .swiper-wrapper {
+                        display: flex;
+                        
+                        .swiper-slide {
+                            flex-shrink: 0;
+                            width: 100%;
+                            height: 100%;
+                            
+                            img {
+                                width: 100%;
+                                height: 250px;
+                                object-fit: cover;
+                                border-radius: 15px;
+                            }
+                        }
+                    }
+
+                    &.swiper {
+                        .swiper-button-next,
+                        .swiper-button-prev {
+                            width: 32px;
+                            height: 32px;
+                            background: #fff;
+                            border-radius: 30px;
+                            position: absolute;
+                            top: 50%;
+                            transform: translateY(-50%);
+                            z-index: 10;
+                            cursor: pointer;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+
+                            &::after {
+                                font-family: swiper-icons;
+                                font-size: 16px;
+                                color: #000;
+                            }
+                        }
+
+                        .swiper-button-next {
+                            right: 10px;
+                            &::after {
+                                content: 'next';
+                            }
+                        }
+
+                        .swiper-button-prev {
+                            left: 10px;
+                            &::after {
+                                content: 'prev';
+                            }
+                        }
+
+                        .swiper-pagination {
+                            position: absolute;
+                            bottom: 10px;
+                            
+                            .swiper-pagination-bullet {
+                                background: #fff;
+                                opacity: .7;
+
+                                &.swiper-pagination-bullet-active {
+                                    opacity: 1;
+                                    background: #fff;
+                                    width: 15px;
+                                    height: 8px;
+                                    border-radius: 5px;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                .property-details {
+                    text-decoration: none;
+                    color: #000;
+                    
+                    .property-content {
+                        position: relative;
+                        padding: 10px 0;
+                        
+                        .property-name {
+                            h6 {
+                                margin-bottom: 5px;
+                                font-weight: 500;
+                            }
+                        }
+                        
+                        .property-location {
+                            p {
+                                margin-bottom: 0;
+                                font-size: 14px;
+                                color: #666;
+                            }
+                        }
+                        
+                        .property-rating {
+                            position: absolute;
+                            top: 10px;
+                            right: 10px;
+                            
+                            p {
+                                margin-bottom: 0;
+                                display: flex;
+                                align-items: center;
+                                
+                                ion-icon {
+                                    font-size: 15px;
+                                    margin-right: 3px;
+                                    color: #000000;  // Gold color for star
+                                }
+                            }
+                        }
+                    }
+    }
+            }
+        }
+        // detail page starts here
+        .property-details{
+            .main-title{
+                h5{
+                    @include setFont(28px, 500);
+                }
+                .share-property{
+                    a{
+                        color: #000;
+                        text-decoration: underline;
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Booking form styles
+.booking-card {
+    position: sticky;
+    top: 2rem;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+    border-radius: 12px;
+    border: none;
+    margin-top: -500px; // Adjust this value to move the form up
+}
+
+.sticky-top {
+    z-index: 100;
+}
+
+// Review styles
+.rating {
+    ion-icon {
+        color: #ffd700;
+    }
+}
+
+// Gallery improvements
+.gallery-img {
+    display: block;
+    overflow: hidden;
+    border-radius: 12px;
+
+    img {
+        transition: transform 0.3s ease;
+    }
+
+    &:hover {
+        img {
+            transform: scale(1.05);
+        }
+    }
+}
+
+// Price summary
+.price-summary {
+    background-color: #f8f9fa;
+    border-radius: 8px;
+}
+
+// Form controls
+.form-control {
+    padding: 0.75rem 1rem;
+}
+
+.btn {
+    &-primary {
+        padding: 0.75rem 1.5rem;
+    }
+}
+
+// Additional SCSS features
+$border-radius: 12px;
+$transition-duration: 0.3s;
+$shadow-color: rgba(0, 0, 0, 0.1);
+$primary-color: #007bff;
+$star-color: #ffd700;
+$bg-light: #f8f9fa;
+
+// Mixins for common patterns
+@mixin card-shadow {
+    box-shadow: 0 0 20px $shadow-color;
+    border-radius: $border-radius;
+}
+
+@mixin hover-transform {
+    transition: transform $transition-duration ease;
+    &:hover {
+        transform: scale(1.05);
+    }
+}
+
+// Enhanced booking card
+.booking {
+    &-card {
+        @include card-shadow;
+        background: white;
+        
+        .form-group {
+            margin-bottom: 1rem;
+            
+            label {
+                font-weight: 500;
+                margin-bottom: 0.5rem;
+            }
+        }
+        
+        .price-summary {
+            background-color: $bg-light;
+            padding: 1rem;
+            border-radius: $border-radius / 2;
+            
+            hr {
+                margin: 0.5rem 0;
+            }
+        }
+    }
+}
+
+// Enhanced review card
+.review {
+    &-card {
+        @include card-shadow;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        
+        .rating {
+            ion-icon {
+                color: $star-color;
+            }
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1rem;
+            
+            img {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+            }
+        }
+    }
+}
+
+// Form elements
+.form {
+    &-control {
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        transition: border-color $transition-duration ease;
+        
+        &:focus {
+            border-color: $primary-color;
+            box-shadow: none;
+        }
+    }
+}
+
+// Button styles
+.btn {
+    &-primary {
+        background-color: $primary-color;
+        border: none;
+        @include hover-transform;
+        
+        &:hover {
+            background-color: darken($primary-color, 10%);
+        }
+    }
+}
+
+// Define variables for consistent styling
+$font-family-serif: "Zen Old Mincho", serif;
+$font-weight-normal: 400;
+$font-size-large: 20px;
+$letter-spacing-wide: 3px;
+$line-height-large: 40px;
+$margin-left-large: 450px;
+$margin-left-small: 40px;
+$underline-width: 400px;
+$underline-border: 2px solid;
+$padding-bottom-large: 100px;
+$padding-h5: 30px 10px;
+$color-lightgray: lightgray;
+
+// Description styles
+// Define variables for consistent styling
+$font-family-serif: "Zen Old Mincho", serif;
+$font-weight-normal: 400;
+$font-size-large: 20px;
+$letter-spacing-wide: 3px;
+$line-height-large: 40px;
+$margin-left-large: 450px;
+$margin-left-small: 40px;
+$underline-width: 400px;
+$underline-border: 2px solid;
+$padding-bottom-large: 100px;
+$padding-h5: 30px 10px;
+$color-lightgray: lightgray;
+
+// Description styles
+// Define variables for consistent styling
+$font-family-serif: "Zen Old Mincho", serif;
+$font-family-cursive: "Playwrite FR Moderne", cursive;
+$font-weight-normal: 400;
+$font-size-large: 20px;
+$letter-spacing-wide: 3px;
+$line-height-large: 40px;
+$margin-left-large: 450px;
+$margin-left-small: 40px;
+$underline-width: 400px;
+$underline-border: 2px solid;
+$padding-bottom-large: 100px;
+$padding-h5: 30px 10px;
+$color-lightgray: lightgray;
+$margin-top-oh: 25px;
+$margin-left-oh: 200px;
+
+// Description styles
+.description {
+    font-family: $font-family-serif;
+    font-weight: $font-weight-normal;
+    font-style: normal;
+    display: contents;
+    text-align: justify;
+    font-size: $font-size-large;
+    letter-spacing: $letter-spacing-wide;
+    margin-left: $margin-left-large;
+    line-height: $line-height-large;
+    padding-bottom: $padding-bottom-large;
+}
+
+// Heading styles
+h2 {
+    margin-left: $margin-left-small;
+    margin-top: 50px;
+}
+
+// Underline styles
+.underline2 {
+    width: $underline-width;
+    margin-top: -10px;
+    border-top: $underline-border;
+}
+
+// OH styles
+.oh {
+    h5 {
+        display: inline-block;
+        padding: $padding-h5;
+        position: absolute;
+        color: $color-lightgray;
+        margin-top: -1px;
+        margin-left: 20px;
+    }
+
+    p {
+        font-family: $font-family-cursive;
+        display: inline-block;
+        position: relative;
+        margin-top: $margin-top-oh;
+        margin-left: $margin-left-oh;
+    }
+}
+
+// Span styles
+.span1 {
+    display: inline-block;
+    padding-right: 40.5px;
+}
+
+.span2 {
+    display: inline-block;
+    padding-right: 36.5px;
+}
+
+// Address styles
+.address {
+    h5 {
+        display: inline-block;
+        padding: $padding-h5;
+        position: absolute;
+        color: $color-lightgray;
+        margin-top: -1px;
+        margin-left: 20px;
+    }
+
+    p {
+        font-family: $font-family-serif;
+        font-weight: $font-weight-normal;
+        font-style: normal;
+        display: inline-block;
+        position: relative;
+        margin-top: $margin-top-oh;
+        margin-left: $margin-left-oh;
+    }
+}
+// General Styles
+body {
+    font-family: $roboto; 
+}
+
+.container {
+    margin-top: 2rem; 
+}
+
+// Form Styles
+form {
+    background: #fff; 
+    border-radius: 12px; 
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1); 
+    padding: 2rem; 
+}
+
+// Field Styles
+.field {
+    margin-bottom: 1.5rem; 
+
+    input.input {
+        width: 100%; 
+        padding: 0.75rem; 
+        border: 1px solid rgba(0, 0, 0, 0.1); 
+        border-radius: 8px; 
+        transition: border-color 0.3s; 
+
+        &:focus {
+            border-color: $primary-color; 
+            box-shadow: 0 0 5px rgba($primary-color, 0.5); 
+        }
+    }
+
+    // Error message styles
+    div {
+        color: red; 
+        font-size: 0.9rem; 
+    }
+}
+
+// Button Styles
+.button.is-primary {
+    background-color: $primary-color; 
+    color: #fff; 
+    padding: 0.75rem 1.5rem; 
+    border: none; 
+    border-radius: 8px; 
+    width: 100%; 
+
+    &:hover {
+        background-color: darken($primary-color, 10%); 
+    }
+}
+
+// Header Styles
+header {
+    height: 80px; 
+    border-bottom: solid 1px rgba(0, 0, 0, 0.3); 
+
+    .logo {
+        flex: 1 0 100px; 
+        padding: 15px 0; 
+    }
+
+    .searchbar {
+        flex: 0 1 auto; 
+        border: solid 1px rgba(0, 0, 0, 0.2); 
+        border-radius: 40px; 
+        box-shadow: 0 3px 5px rgba(0, 0, 0, 0.2); 
+    }
+}
+
+// Responsive Styles
+@media (max-width: 768px) {
+    .container {
+        padding: 0 15px;
+    }
+}
+.alert {
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 8px;
+    
+    &.alert-info {
+        background-color: #e3f2fd;
+        border: 1px solid #90caf9;
+        color: #1976d2;
+    }
+    
+    &.alert-error {
+        background-color: #ffebee;
+        border: 1px solid #ffcdd2;
+        color: #c62828;
+    }
+}
+.text-center {
+    text-align: center;
+    
+    p {
+        margin: 1rem 0;
+    }
+    
+    a {
+        text-decoration: none;
+        
+        &:hover {
+            text-decoration: underline;
+        }
+    }
+}
