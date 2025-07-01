@@ -68,35 +68,37 @@
     
         <div class="main-content mt-5">
             <div class="results px-4">
-                
                 <div class="row ms-4">
                     {% for record in records %}
                     <div class="col-sm-3 ">
                         <div class="property"> 
                             <div class="property-images swiper propertyinside">
                                 <div class="swiper-wrapper">    
-                                    {% set image_set = images_by_cafe[record.id] %}
-                                        {% if image_set.image1 %} 
+                                    {% if record.image1 %} 
                                     <div class="swiper-slide">
-                                        <img src="{{ image_set.image1 }}" alt="" class="img-fluid round" height="300px">
+                                        <img src="{{ record.image1 }}" alt="" class="img-fluid round" height="300px">
                                     </div>
-                                        {% endif %}
-                                        {% if image_set.image2 %} 
+                                    {% endif %}
+                                    {% if record.image2 %} 
                                     <div class="swiper-slide">
-                                        <img src="{{ image_set.image2 }}" alt="" class="img-fluid round" height="300px">
+                                        <img src="{{ record.image2 }}" alt="" class="img-fluid round" height="300px">
                                     </div>
-                                        {% endif %}
-                                        {% if image_set.image3 %} 
+                                    {% endif %}
+                                    {% if record.image3 %} 
                                     <div class="swiper-slide">
-                                        <img src="{{ image_set.image3 }}" alt="" class="img-fluid round" height="300px">
+                                        <img src="{{ record.image3 }}" alt="" class="img-fluid round" height="300px">
                                     </div>
-                                        {% endif %}
-                                        {% if image_set.image4 %} 
+                                    {% endif %}
+                                    {% if record.image4 %} 
                                     <div class="swiper-slide">
-                                        <img src="{{ image_set.image4 }}" alt="" class="img-fluid round" height="300px">
+                                        <img src="{{ record.image4 }}" alt="" class="img-fluid round" height="300px">
                                     </div>
-                                        {% endif %}
-                                    
+                                    {% endif %}
+                                    {% if record.image5 %} 
+                                    <div class="swiper-slide">
+                                        <img src="{{ record.image5 }}" alt="" class="img-fluid round" height="300px">
+                                    </div>
+                                    {% endif %}
                                 </div>
                                 <div class="swiper-pagination"></div>
                                 <div class="swiper-button-next"></div>
@@ -119,7 +121,6 @@
                     </div>
                     {% endfor %}
                 </div>
-                
             </div>
         </div>
     

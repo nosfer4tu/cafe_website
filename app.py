@@ -22,6 +22,8 @@ def convert_data(file_name):
     return binary_data
 
 def get_db():
+    load_dotenv()
+    
     conn = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
     return conn
 
