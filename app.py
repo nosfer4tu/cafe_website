@@ -292,6 +292,7 @@ def get_upload_url():
     headers = {"Authorization": f"Bearer {token}"}
     res = requests.post(api_url, headers=headers, json={"filename": filename})
     if res.status_code != 200:
+        print("Vercel Blob API response:", res.status_code, res.text, flush=True)
         return jsonify({"error": "Failed to get upload URL"}), 500
 
     data = res.json()
