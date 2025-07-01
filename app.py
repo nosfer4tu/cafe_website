@@ -153,12 +153,7 @@ def index():
             cursor.execute("SELECT * FROM cafes ORDER BY id")
             records = cursor.fetchall()
 
-    for record in records:
-        for i in range(1, 6):
-            img_col = f"image{i}"
-            if record[img_col]:
-                record[img_col] = f"data:image/png;base64,{base64.b64encode(record[img_col]).decode('utf-8')}"
-
+    # No base64 encoding needed; image fields are URLs
     return render_template("index.html", records=records)
 
 
@@ -173,11 +168,11 @@ def d(cafes_id):
         return "Cafe not found", 404
 
     images = [{
-        "image1": f"data:image/png;base64,{base64.b64encode(cafe['image1']).decode('utf-8')}" if cafe['image1'] else None,
-        "image2": f"data:image/png;base64,{base64.b64encode(cafe['image2']).decode('utf-8')}" if cafe['image2'] else None,
-        "image3": f"data:image/png;base64,{base64.b64encode(cafe['image3']).decode('utf-8')}" if cafe['image3'] else None,
-        "image4": f"data:image/png;base64,{base64.b64encode(cafe['image4']).decode('utf-8')}" if cafe['image4'] else None,
-        "image5": f"data:image/png;base64,{base64.b64encode(cafe['image5']).decode('utf-8')}" if cafe['image5'] else None,
+        "image1": cafe['image1'] if cafe['image1'] else None,
+        "image2": cafe['image2'] if cafe['image2'] else None,
+        "image3": cafe['image3'] if cafe['image3'] else None,
+        "image4": cafe['image4'] if cafe['image4'] else None,
+        "image5": cafe['image5'] if cafe['image5'] else None,
     }]
 
     return render_template("detail.html", record=cafe, images=images)
