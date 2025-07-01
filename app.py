@@ -17,6 +17,7 @@ HASH_ALGORITHM = "pbkdf2_sha256"
 app.secret_key = b"opensesame"
 
 logging.basicConfig(level=logging.INFO)
+load_dotenv()
 
 def convert_data(file_name):
     with open(file_name, "rb") as f:
@@ -24,9 +25,8 @@ def convert_data(file_name):
     return binary_data
 
 def get_db():
-    load_dotenv()
+    
     database_url = os.environ.get("DATABASE_URL")
-    print("DATABASE_URL:", database_url, flush=True)
     if not database_url:
         print("DATABASE_URL not set", flush=True)
         raise ValueError("DATABASE_URL environment variable is not set")
