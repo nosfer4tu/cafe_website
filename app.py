@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
 import base64
 import hashlib
 import secrets
@@ -7,6 +7,8 @@ from psycopg2.extras import RealDictCursor  # To get dict-like cursor (similar t
 from dotenv import load_dotenv
 import os
 import logging
+from vercel_blob import VercelBlob
+import json
 
 app = Flask(__name__)
 
@@ -187,48 +189,46 @@ def upload_get():
 
 @app.route("/upload", methods=["POST"])
 def upload():
-    if request.method == "POST":
-        cafe_name = request.form["cafe_name"]
-        zipcode = request.form["postal_code"]
-        prefecture = request.form["prefectures"]
-        municipality = request.form["municipalities"]
-        opening_hours = request.form["opening_hours"]
-        description = request.form["cafe_details"]
-        files = request.files.getlist('images[]')
+    cafe_name = request.form["cafe_name"]
+    zipcode = request.form["postal_code"]
+    prefecture = request.form["prefectures"]
+    municipality = request.form["municipalities"]
+    opening_hours = request.form["opening_hours"]
+    description = request.form["cafe_details"]
 
-        image1 = files[0].read() if len(files) > 0 else None
-        image2 = files[1].read() if len(files) > 1 else None
-        image3 = files[2].read() if len(files) > 2 else None
-        image4 = files[3].read() if len(files) > 3 else None
-        image5 = files[4].read() if len(files) > 4 else None
+    # Get image URLs from the form (sent as a JSON string)
+    image_urls = json.loads(request.form.get("image_urls", "[]"))
 
-        try:
-            with get_db() as conn:
-                with conn.cursor() as cursor:
-                    cursor.execute(
-                        """
-                        INSERT INTO cafes (cafe_name, zipcode, prefecture, municipality, opening_hours, description, image1, image2, image3, image4, image5)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                        """,
-                        (
-                            cafe_name,
-                            zipcode,
-                            prefecture,
-                            municipality,
-                            opening_hours,
-                            description,
-                            psycopg2.Binary(image1) if image1 else None,
-                            psycopg2.Binary(image2) if image2 else None,
-                            psycopg2.Binary(image3) if image3 else None,
-                            psycopg2.Binary(image4) if image4 else None,
-                            psycopg2.Binary(image5) if image5 else None,
-                        ),
-                    )
-                conn.commit()
-        except Exception as e:
-            logging.error(f"Error inserting cafe: {e}")
-            return render_template("upload.html", error_insert=True)
-        return redirect(url_for("index"))
+    # Unpack up to 5 image URLs, fill with None if fewer
+    image1, image2, image3, image4, image5 = (image_urls + [None]*5)[:5]
+
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                cursor.execute(
+                    """
+                    INSERT INTO cafes (cafe_name, zipcode, prefecture, municipality, opening_hours, description, image1, image2, image3, image4, image5)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """,
+                    (
+                        cafe_name,
+                        zipcode,
+                        prefecture,
+                        municipality,
+                        opening_hours,
+                        description,
+                        image1,
+                        image2,
+                        image3,
+                        image4,
+                        image5,
+                    ),
+                )
+            conn.commit()
+    except Exception as e:
+        logging.error(f"Error inserting cafe: {e}")
+        return render_template("upload.html", error_insert=True)
+    return redirect(url_for("index"))
 
 @app.route("/b/<int:user_id>", methods=["GET"])
 def b(user_id):
@@ -284,6 +284,19 @@ def booking():
 def confirmation():
     return render_template("confirmation.html")
 
+@app.route("/api/get-upload-url", methods=["POST"])
+def get_upload_url():
+    # Get the filename from the request
+    data = request.get_json()
+    filename = data.get("filename")
+    if not filename:
+        return jsonify({"error": "Filename required"}), 400
+
+    # Initialize VercelBlob with your token
+    blob = VercelBlob(os.environ["BLOB_READ_WRITE_TOKEN"])
+    # Generate a signed upload URL
+    upload_url, public_url = blob.get_upload_url(filename)
+    return jsonify({"uploadUrl": upload_url, "publicUrl": public_url})
 
 if __name__ == "__main__":
     app.run(port=8000, debug=True)
