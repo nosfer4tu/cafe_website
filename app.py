@@ -7,8 +7,8 @@ from psycopg2.extras import RealDictCursor  # To get dict-like cursor (similar t
 from dotenv import load_dotenv
 import os
 import logging
-from vercel_blob import VercelBlob
 import json
+import requests
 
 app = Flask(__name__)
 
@@ -286,16 +286,22 @@ def confirmation():
 
 @app.route("/api/get-upload-url", methods=["POST"])
 def get_upload_url():
-    # Get the filename from the request
     data = request.get_json()
     filename = data.get("filename")
     if not filename:
         return jsonify({"error": "Filename required"}), 400
 
-    # Initialize VercelBlob with your token
-    blob = VercelBlob(os.environ["BLOB_READ_WRITE_TOKEN"])
-    # Generate a signed upload URL
-    upload_url, public_url = blob.get_upload_url(filename)
+    # Call Vercel Blob REST API to get an upload URL
+    token = os.environ["BLOB_READ_WRITE_TOKEN"]
+    api_url = "https://api.vercel.com/v2/blob/upload-url"
+    headers = {"Authorization": f"Bearer {token}"}
+    res = requests.post(api_url, headers=headers, json={"filename": filename})
+    if res.status_code != 200:
+        return jsonify({"error": "Failed to get upload URL"}), 500
+
+    data = res.json()
+    upload_url = data["url"]
+    public_url = data["blob"]["url"]
     return jsonify({"uploadUrl": upload_url, "publicUrl": public_url})
 
 if __name__ == "__main__":
