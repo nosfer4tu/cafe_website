@@ -23,8 +23,16 @@ def convert_data(file_name):
 
 def get_db():
     load_dotenv()
-    
-    conn = psycopg2.connect(os.environ["DATABASE_URL"], sslmode="require")
+    database_url = os.environ.get("DATABASE_URL")
+    print("DATABASE_URL:", database_url, flush=True)
+    if not database_url:
+        print("DATABASE_URL not set", flush=True)
+        raise ValueError("DATABASE_URL environment variable is not set")
+    try:
+        conn = psycopg2.connect(database_url, sslmode="require")
+    except Exception as e:
+        print("Database connection error:", e, flush=True)
+        raise
     return conn
 
 
