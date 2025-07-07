@@ -210,31 +210,46 @@
             const statusDiv = document.getElementById('uploadStatus');
             statusDiv.style.display = 'block';
             statusDiv.className = 'upload-status';
-            statusDiv.textContent = 'Testing upload...';
+            statusDiv.textContent = 'Testing presigned URL upload...';
             
             try {
-                const formData = new FormData();
-                formData.append('file', files[0]);
+                const file = files[0];
                 
-                const response = await fetch('/test-upload-simple', {
+                // Step 1: Get presigned URL
+                const presignedResponse = await fetch('/get-presigned-url', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: file.name,
+                        contentType: file.type
+                    })
                 });
                 
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    const text = await response.text();
-                    console.error('Non-JSON response:', text);
-                    statusDiv.className = 'upload-status upload-error';
-                    statusDiv.textContent = `Test failed: Server returned non-JSON response (${response.status})`;
-                    return;
+                if (!presignedResponse.ok) {
+                    const errorData = await presignedResponse.json();
+                    throw new Error(errorData.error || 'Failed to get presigned URL');
                 }
                 
-                const data = await response.json();
-                console.log('Test upload response:', data);
+                const presignedData = await presignedResponse.json();
+                console.log('Presigned URL response:', presignedData);
+                
+                // Step 2: Upload to S3
+                const uploadResponse = await fetch(presignedData.presignedUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type
+                    }
+                });
+                
+                if (!uploadResponse.ok) {
+                    throw new Error('Failed to upload file to S3');
+                }
                 
                 statusDiv.className = 'upload-status upload-success';
-                statusDiv.textContent = `Test successful! Filename: ${data.filename}, AWS Key: ${data.env_check.aws_key}, Bucket: ${data.env_check.bucket}`;
+                statusDiv.textContent = `Test successful! File uploaded to: ${presignedData.publicUrl}`;
                 
             } catch (error) {
                 console.error('Test upload error:', error);
@@ -244,37 +259,41 @@
         }
 
         async function uploadImageToS3(file) {
-            const formData = new FormData();
-            formData.append('file', file);
-            
             try {
-                // First test with the simple endpoint
-                const response = await fetch('/test-upload-simple', {
+                // Step 1: Get presigned URL from server
+                const presignedResponse = await fetch('/get-presigned-url', {
                     method: 'POST',
-                    body: formData
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        filename: file.name,
+                        contentType: file.type
+                    })
                 });
                 
-                // Check if response is JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    // If not JSON, get the text and throw an error
-                    const text = await response.text();
-                    console.error('Non-JSON response:', text);
-                    console.error('Response status:', response.status);
-                    console.error('Response headers:', response.headers);
-                    throw new Error(`Server returned non-JSON response (${response.status}). Check server logs.`);
+                if (!presignedResponse.ok) {
+                    const errorData = await presignedResponse.json();
+                    throw new Error(errorData.error || 'Failed to get upload URL');
                 }
                 
-                const data = await response.json();
+                const presignedData = await presignedResponse.json();
                 
-                if (!response.ok) {
-                    throw new Error(data.error || 'Upload failed');
+                // Step 2: Upload directly to S3 using presigned URL
+                const uploadResponse = await fetch(presignedData.presignedUrl, {
+                    method: 'PUT',
+                    body: file,
+                    headers: {
+                        'Content-Type': file.type
+                    }
+                });
+                
+                if (!uploadResponse.ok) {
+                    throw new Error('Failed to upload file to S3');
                 }
                 
-                // For now, just return a dummy URL for testing
-                // We'll switch back to the real upload once we confirm the basic functionality works
-                console.log('Test upload successful:', data);
-                return `https://test-bucket.s3.amazonaws.com/test-${file.name}`;
+                // Return the public URL
+                return presignedData.publicUrl;
                 
             } catch (error) {
                 console.error('Upload error details:', error);

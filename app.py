@@ -448,6 +448,61 @@ def test_json():
     """Simple test endpoint to verify JSON responses work"""
     return jsonify({"message": "JSON response working", "status": "success"})
 
+@app.route('/get-presigned-url', methods=['POST'])
+def get_presigned_url():
+    """Get a presigned URL for direct S3 upload"""
+    try:
+        data = request.get_json()
+        filename = data.get('filename')
+        content_type = data.get('contentType', 'image/jpeg')
+        
+        if not filename:
+            return jsonify({"error": "Filename required"}), 400
+        
+        # Check AWS credentials
+        aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+        aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+        bucket_name = os.environ.get('S3_BUCKET_NAME')
+        region = os.environ.get('AWS_REGION', 'us-east-1')
+        
+        if not all([aws_access_key, aws_secret_key, bucket_name]):
+            return jsonify({"error": "AWS credentials not configured"}), 500
+        
+        # Create S3 client
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=aws_access_key,
+            aws_secret_access_key=aws_secret_key,
+            region_name=region
+        )
+        
+        # Generate unique filename
+        unique_filename = f"{uuid.uuid4()}_{secure_filename(filename)}"
+        
+        # Generate presigned URL
+        presigned_url = s3.generate_presigned_url(
+            'put_object',
+            Params={
+                'Bucket': bucket_name,
+                'Key': unique_filename,
+                'ContentType': content_type
+            },
+            ExpiresIn=3600  # URL expires in 1 hour
+        )
+        
+        # Return the presigned URL and the final public URL
+        public_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{unique_filename}"
+        
+        return jsonify({
+            "presignedUrl": presigned_url,
+            "publicUrl": public_url,
+            "filename": unique_filename
+        })
+        
+    except Exception as e:
+        logging.error(f"Error generating presigned URL: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/test-upload-simple', methods=['POST'])
 def test_upload_simple():
     """Minimal upload test without S3"""
@@ -459,6 +514,7 @@ def test_upload_simple():
         return jsonify({
             "filename": file.filename,
             "content_type": file.content_type,
+            "file_size": len(file.read()),
             "env_check": {
                 "aws_key": "SET" if os.environ.get('AWS_ACCESS_KEY_ID') else "NOT SET",
                 "bucket": os.environ.get('S3_BUCKET_NAME', "NOT SET")
