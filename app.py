@@ -8,7 +8,6 @@ from dotenv import load_dotenv
 import os
 import logging
 import json
-import requests
 from werkzeug.utils import secure_filename
 import uuid
 import boto3
