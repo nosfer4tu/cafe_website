@@ -202,7 +202,8 @@
             formData.append('file', file);
             
             try {
-                const response = await fetch('/upload_file', {
+                // First test with the simple endpoint
+                const response = await fetch('/test-upload-simple', {
                     method: 'POST',
                     body: formData
                 });
@@ -224,7 +225,11 @@
                     throw new Error(data.error || 'Upload failed');
                 }
                 
-                return data.url;
+                // For now, just return a dummy URL for testing
+                // We'll switch back to the real upload once we confirm the basic functionality works
+                console.log('Test upload successful:', data);
+                return `https://test-bucket.s3.amazonaws.com/test-${file.name}`;
+                
             } catch (error) {
                 console.error('Upload error details:', error);
                 throw error;
