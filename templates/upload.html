@@ -303,68 +303,22 @@
         }
 
         async function uploadImageToS3(file) {
-            try {
-                // Step 1: Get presigned URL from server
-                const presignedResponse = await fetch('/get-presigned-url', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        filename: file.name,
-                        contentType: file.type
-                    })
-                });
-                
-                if (!presignedResponse.ok) {
-                    const errorData = await presignedResponse.json();
-                    throw new Error(errorData.error || 'Failed to get upload URL');
-                }
-                
-                const presignedData = await presignedResponse.json();
-                
-                // Step 2: Try direct S3 upload first
-                try {
-                    const uploadResponse = await fetch(presignedData.presignedUrl, {
-                        method: 'PUT',
-                        body: file,
-                        headers: {
-                            'Content-Type': file.type
-                        }
-                    });
-                    
-                    if (!uploadResponse.ok) {
-                        throw new Error('Failed to upload file to S3');
-                    }
-                    
-                    // Return the public URL
-                    return presignedData.publicUrl;
-                    
-                } catch (s3Error) {
-                    console.log('Direct S3 upload failed, trying server upload:', s3Error);
-                    
-                    // Fallback: Upload through server
-                    const formData = new FormData();
-                    formData.append('file', file);
-                    
-                    const serverResponse = await fetch('/upload_file_server', {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (!serverResponse.ok) {
-                        const errorData = await serverResponse.json();
-                        throw new Error(errorData.error || 'Server upload failed');
-                    }
-                    
-                    const serverData = await serverResponse.json();
-                    return serverData.url;
-                }
-                
-            } catch (error) {
-                console.error('Upload error details:', error);
-                throw error;
+            // Always use server upload
+            const formData = new FormData();
+            formData.append('file', file);
+
+            const serverResponse = await fetch('/upload_file_server', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!serverResponse.ok) {
+                const errorData = await serverResponse.json();
+                throw new Error(errorData.error || 'Server upload failed');
             }
+
+            const serverData = await serverResponse.json();
+            return serverData.url;
         }
 
         document.querySelector('form').addEventListener('submit', async function(e) {
