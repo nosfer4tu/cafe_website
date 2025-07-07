@@ -507,10 +507,9 @@ def get_presigned_url():
             Params={
                 'Bucket': bucket_name,
                 'Key': unique_filename,
-                'ContentType': content_type,
-                'ACL': 'public-read'  # Make sure file is publicly readable
+                'ContentType': content_type
             },
-            ExpiresIn=3600  # URL expires in 1 hour
+            ExpiresIn=3600
         )
         
         # Return the presigned URL and the final public URL
