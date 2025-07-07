@@ -392,12 +392,32 @@ def upload_file():
     Simple file upload endpoint for testing
     """
     try:
+        # Check if file is present
         if 'file' not in request.files:
             return jsonify({"error": "No file provided"}), 400
         
         file = request.files['file']
         if file.filename == '':
             return jsonify({"error": "No file selected"}), 400
+        
+        # Check AWS credentials before attempting upload
+        aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+        aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+        bucket_name = os.environ.get('S3_BUCKET_NAME')
+        region = os.environ.get('AWS_REGION', 'us-east-1')
+        
+        # Log environment variables for debugging (remove in production)
+        logging.info(f"AWS_ACCESS_KEY_ID: {'SET' if aws_access_key else 'NOT SET'}")
+        logging.info(f"AWS_SECRET_ACCESS_KEY: {'SET' if aws_secret_key else 'NOT SET'}")
+        logging.info(f"S3_BUCKET_NAME: {bucket_name}")
+        logging.info(f"AWS_REGION: {region}")
+        
+        if not aws_access_key:
+            return jsonify({"error": "AWS_ACCESS_KEY_ID not configured"}), 500
+        if not aws_secret_key:
+            return jsonify({"error": "AWS_SECRET_ACCESS_KEY not configured"}), 500
+        if not bucket_name:
+            return jsonify({"error": "S3_BUCKET_NAME not configured"}), 500
         
         # Upload to S3
         file_url = upload_to_s3(file)
@@ -409,7 +429,24 @@ def upload_file():
         
     except Exception as e:
         logging.error(f"Upload error: {e}")
+        # Ensure we always return JSON, even on errors
         return jsonify({"error": str(e)}), 500
+
+@app.route('/debug-env')
+def debug_env():
+    """Temporary route to check environment variables"""
+    return jsonify({
+        "aws_access_key": "SET" if os.environ.get('AWS_ACCESS_KEY_ID') else "NOT SET",
+        "aws_secret_key": "SET" if os.environ.get('AWS_SECRET_ACCESS_KEY') else "NOT SET", 
+        "bucket_name": os.environ.get('S3_BUCKET_NAME', "NOT SET"),
+        "region": os.environ.get('AWS_REGION', "NOT SET"),
+        "all_env_vars": {k: v for k, v in os.environ.items() if 'AWS' in k or 'S3' in k}
+    })
+
+@app.route('/test-json')
+def test_json():
+    """Simple test endpoint to verify JSON responses work"""
+    return jsonify({"message": "JSON response working", "status": "success"})
 
 if __name__ == "__main__":
     app.run(port=8000, debug=True)

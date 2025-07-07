@@ -201,18 +201,34 @@
             const formData = new FormData();
             formData.append('file', file);
             
-            const response = await fetch('/upload_file', {
-                method: 'POST',
-                body: formData
-            });
-            
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Upload failed');
+            try {
+                const response = await fetch('/upload_file', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                // Check if response is JSON
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    // If not JSON, get the text and throw an error
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text);
+                    console.error('Response status:', response.status);
+                    console.error('Response headers:', response.headers);
+                    throw new Error(`Server returned non-JSON response (${response.status}). Check server logs.`);
+                }
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Upload failed');
+                }
+                
+                return data.url;
+            } catch (error) {
+                console.error('Upload error details:', error);
+                throw error;
             }
-            
-            const data = await response.json();
-            return data.url;
         }
 
         document.querySelector('form').addEventListener('submit', async function(e) {
