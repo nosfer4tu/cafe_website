@@ -9,6 +9,10 @@ import os
 import logging
 import json
 import requests
+from werkzeug.utils import secure_filename
+import uuid
+import boto3
+from botocore.exceptions import NoCredentialsError, ClientError
 
 app = Flask(__name__)
 
@@ -184,6 +188,8 @@ def upload_get():
 
 @app.route("/upload", methods=["POST"])
 def upload():
+    print("Form keys:", list(request.form.keys()), flush=True)
+    print("image_urls raw:", request.form.get("image_urls"), flush=True)
     cafe_name = request.form["cafe_name"]
     zipcode = request.form["postal_code"]
     prefecture = request.form["prefectures"]
@@ -299,6 +305,111 @@ def get_upload_url():
     upload_url = data["url"]
     public_url = data["blob"]["url"]
     return jsonify({"uploadUrl": upload_url, "publicUrl": public_url})
+
+def upload_to_s3(file):
+    """
+    Upload a file to AWS S3 and return the public URL
+    """
+    try:
+        # Get AWS credentials from environment
+        aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID')
+        aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
+        bucket_name = os.environ.get('S3_BUCKET_NAME')
+        region = os.environ.get('AWS_REGION', 'ap-northeast-1')
+        
+        if not all([aws_access_key, aws_secret_key, bucket_name]):
+            raise ValueError("AWS credentials not properly configured. Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and S3_BUCKET_NAME environment variables.")
+        
+        # Create S3 client
+        s3 = boto3.client(
+            's3',
+            aws_access_key_id=aws_access_key,
+            aws_secret_access_key=aws_secret_key,
+            region_name=region
+        )
+        
+        # Generate unique filename
+        filename = secure_filename(file.filename)
+        unique_filename = f"{uuid.uuid4()}_{filename}"
+        
+        # Upload file
+        file.seek(0)  # Reset file pointer
+        s3.upload_fileobj(
+            file, 
+            bucket_name, 
+            unique_filename,
+            ExtraArgs={
+                'ContentType': file.content_type
+            }
+        )
+        
+        # Return public URL
+        file_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{unique_filename}"
+        return file_url
+        
+    except NoCredentialsError:
+        raise Exception("AWS credentials not found. Please check your environment variables.")
+    except ClientError as e:
+        error_code = e.response['Error']['Code']
+        if error_code == 'NoSuchBucket':
+            raise Exception(f"S3 bucket '{bucket_name}' does not exist.")
+        elif error_code == 'AccessDenied':
+            raise Exception("Access denied to S3 bucket. Check your AWS permissions.")
+        else:
+            raise Exception(f"AWS S3 error: {e}")
+    except Exception as e:
+        logging.error(f"Error uploading to S3: {e}")
+        raise
+
+def save_url_to_neon(file_url, cafe_id=None):
+    """
+    Save file URL to Neon database
+    """
+    try:
+        with get_db() as conn:
+            with conn.cursor() as cursor:
+                if cafe_id:
+                    # Update existing cafe with image URL
+                    cursor.execute(
+                        "UPDATE cafes SET image1 = %s WHERE id = %s",
+                        (file_url, cafe_id)
+                    )
+                else:
+                    # For testing purposes, you could create a separate images table
+                    cursor.execute(
+                        "INSERT INTO image_urls (url, created_at) VALUES (%s, NOW())",
+                        (file_url,)
+                    )
+            conn.commit()
+        return True
+    except Exception as e:
+        logging.error(f"Error saving URL to database: {e}")
+        return False
+
+@app.route('/upload_file', methods=['POST'])
+def upload_file():
+    """
+    Simple file upload endpoint for testing
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        # Upload to S3
+        file_url = upload_to_s3(file)
+        
+        # Save URL to database
+        save_url_to_neon(file_url)
+        
+        return jsonify({"url": file_url, "success": True})
+        
+    except Exception as e:
+        logging.error(f"Upload error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     app.run(port=8000, debug=True)
