@@ -15,6 +15,7 @@ import boto3
 from botocore.exceptions import NoCredentialsError, ClientError
 
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50 MB, adjust as needed
 
 RESTORE_FOLDER = "static/img"
 HASH_ALGORITHM = "pbkdf2_sha256"
