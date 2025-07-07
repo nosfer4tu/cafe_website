@@ -448,5 +448,24 @@ def test_json():
     """Simple test endpoint to verify JSON responses work"""
     return jsonify({"message": "JSON response working", "status": "success"})
 
+@app.route('/test-upload-simple', methods=['POST'])
+def test_upload_simple():
+    """Minimal upload test without S3"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file"}), 400
+        
+        file = request.files['file']
+        return jsonify({
+            "filename": file.filename,
+            "content_type": file.content_type,
+            "env_check": {
+                "aws_key": "SET" if os.environ.get('AWS_ACCESS_KEY_ID') else "NOT SET",
+                "bucket": os.environ.get('S3_BUCKET_NAME', "NOT SET")
+            }
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 if __name__ == "__main__":
     app.run(port=8000, debug=True)
