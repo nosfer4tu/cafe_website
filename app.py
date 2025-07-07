@@ -432,6 +432,28 @@ def upload_file():
         # Ensure we always return JSON, even on errors
         return jsonify({"error": str(e)}), 500
 
+@app.route('/upload_file_server', methods=['POST'])
+def upload_file_server():
+    """
+    Server-side upload endpoint (fallback for CORS issues)
+    """
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+        
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "No file selected"}), 400
+        
+        # Upload to S3 through server
+        file_url = upload_to_s3(file)
+        
+        return jsonify({"url": file_url, "success": True})
+        
+    except Exception as e:
+        logging.error(f"Server upload error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/debug-env')
 def debug_env():
     """Temporary route to check environment variables"""
@@ -479,13 +501,14 @@ def get_presigned_url():
         # Generate unique filename
         unique_filename = f"{uuid.uuid4()}_{secure_filename(filename)}"
         
-        # Generate presigned URL
+        # Generate presigned URL with CORS headers
         presigned_url = s3.generate_presigned_url(
             'put_object',
             Params={
                 'Bucket': bucket_name,
                 'Key': unique_filename,
-                'ContentType': content_type
+                'ContentType': content_type,
+                'ACL': 'public-read'  # Make sure file is publicly readable
             },
             ExpiresIn=3600  # URL expires in 1 hour
         )

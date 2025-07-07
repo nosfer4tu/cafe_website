@@ -323,21 +323,43 @@
                 
                 const presignedData = await presignedResponse.json();
                 
-                // Step 2: Upload directly to S3 using presigned URL
-                const uploadResponse = await fetch(presignedData.presignedUrl, {
-                    method: 'PUT',
-                    body: file,
-                    headers: {
-                        'Content-Type': file.type
+                // Step 2: Try direct S3 upload first
+                try {
+                    const uploadResponse = await fetch(presignedData.presignedUrl, {
+                        method: 'PUT',
+                        body: file,
+                        headers: {
+                            'Content-Type': file.type
+                        }
+                    });
+                    
+                    if (!uploadResponse.ok) {
+                        throw new Error('Failed to upload file to S3');
                     }
-                });
-                
-                if (!uploadResponse.ok) {
-                    throw new Error('Failed to upload file to S3');
+                    
+                    // Return the public URL
+                    return presignedData.publicUrl;
+                    
+                } catch (s3Error) {
+                    console.log('Direct S3 upload failed, trying server upload:', s3Error);
+                    
+                    // Fallback: Upload through server
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    
+                    const serverResponse = await fetch('/upload_file_server', {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!serverResponse.ok) {
+                        const errorData = await serverResponse.json();
+                        throw new Error(errorData.error || 'Server upload failed');
+                    }
+                    
+                    const serverData = await serverResponse.json();
+                    return serverData.url;
                 }
-                
-                // Return the public URL
-                return presignedData.publicUrl;
                 
             } catch (error) {
                 console.error('Upload error details:', error);
