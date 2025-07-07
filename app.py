@@ -286,27 +286,6 @@ def booking():
 def confirmation():
     return render_template("confirmation.html")
 
-@app.route("/api/get-upload-url", methods=["POST"])
-def get_upload_url():
-    data = request.get_json()
-    filename = data.get("filename")
-    if not filename:
-        return jsonify({"error": "Filename required"}), 400
-
-    # Call Vercel Blob REST API to get an upload URL
-    token = os.environ["BLOB_READ_WRITE_TOKEN"]
-    api_url = "https://api.vercel.com/v2/blob/upload-url"
-    headers = {"Authorization": f"Bearer {token}"}
-    res = requests.post(api_url, headers=headers, json={"filename": filename})
-    if res.status_code != 200:
-        print("Vercel Blob API response:", res.status_code, res.text, flush=True)
-        return jsonify({"error": "Failed to get upload URL"}), 500
-
-    data = res.json()
-    upload_url = data["url"]
-    public_url = data["blob"]["url"]
-    return jsonify({"uploadUrl": upload_url, "publicUrl": public_url})
-
 def upload_to_s3(file):
     """
     Upload a file to AWS S3 and return the public URL
@@ -387,52 +366,6 @@ def save_url_to_neon(file_url, cafe_id=None):
         logging.error(f"Error saving URL to database: {e}")
         return False
 
-@app.route('/upload_file', methods=['POST'])
-def upload_file():
-    """
-    Simple file upload endpoint for testing
-    """
-    try:
-        # Check if file is present
-        if 'file' not in request.files:
-            return jsonify({"error": "No file provided"}), 400
-        
-        file = request.files['file']
-        if file.filename == '':
-            return jsonify({"error": "No file selected"}), 400
-        
-        # Check AWS credentials before attempting upload
-        aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-        aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        bucket_name = os.environ.get('S3_BUCKET_NAME')
-        region = os.environ.get('AWS_REGION', 'us-east-1')
-        
-        # Log environment variables for debugging (remove in production)
-        logging.info(f"AWS_ACCESS_KEY_ID: {'SET' if aws_access_key else 'NOT SET'}")
-        logging.info(f"AWS_SECRET_ACCESS_KEY: {'SET' if aws_secret_key else 'NOT SET'}")
-        logging.info(f"S3_BUCKET_NAME: {bucket_name}")
-        logging.info(f"AWS_REGION: {region}")
-        
-        if not aws_access_key:
-            return jsonify({"error": "AWS_ACCESS_KEY_ID not configured"}), 500
-        if not aws_secret_key:
-            return jsonify({"error": "AWS_SECRET_ACCESS_KEY not configured"}), 500
-        if not bucket_name:
-            return jsonify({"error": "S3_BUCKET_NAME not configured"}), 500
-        
-        # Upload to S3
-        file_url = upload_to_s3(file)
-        
-        # Save URL to database
-        save_url_to_neon(file_url)
-        
-        return jsonify({"url": file_url, "success": True})
-        
-    except Exception as e:
-        logging.error(f"Upload error: {e}")
-        # Ensure we always return JSON, even on errors
-        return jsonify({"error": str(e)}), 500
-
 @app.route('/upload_file_server', methods=['POST'])
 def upload_file_server():
     """
@@ -453,97 +386,6 @@ def upload_file_server():
         
     except Exception as e:
         logging.error(f"Server upload error: {e}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/debug-env')
-def debug_env():
-    """Temporary route to check environment variables"""
-    return jsonify({
-        "aws_access_key": "SET" if os.environ.get('AWS_ACCESS_KEY_ID') else "NOT SET",
-        "aws_secret_key": "SET" if os.environ.get('AWS_SECRET_ACCESS_KEY') else "NOT SET", 
-        "bucket_name": os.environ.get('S3_BUCKET_NAME', "NOT SET"),
-        "region": os.environ.get('AWS_REGION', "NOT SET"),
-        "all_env_vars": {k: v for k, v in os.environ.items() if 'AWS' in k or 'S3' in k}
-    })
-
-@app.route('/test-json')
-def test_json():
-    """Simple test endpoint to verify JSON responses work"""
-    return jsonify({"message": "JSON response working", "status": "success"})
-
-@app.route('/get-presigned-url', methods=['POST'])
-def get_presigned_url():
-    """Get a presigned URL for direct S3 upload"""
-    try:
-        data = request.get_json()
-        filename = data.get('filename')
-        content_type = data.get('contentType', 'image/jpeg')
-        
-        if not filename:
-            return jsonify({"error": "Filename required"}), 400
-        
-        # Check AWS credentials
-        aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID')
-        aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
-        bucket_name = os.environ.get('S3_BUCKET_NAME')
-        region = os.environ.get('AWS_REGION', 'us-east-1')
-        
-        if not all([aws_access_key, aws_secret_key, bucket_name]):
-            return jsonify({"error": "AWS credentials not configured"}), 500
-        
-        # Create S3 client
-        s3 = boto3.client(
-            's3',
-            aws_access_key_id=aws_access_key,
-            aws_secret_access_key=aws_secret_key,
-            region_name=region
-        )
-        
-        # Generate unique filename
-        unique_filename = f"{uuid.uuid4()}_{secure_filename(filename)}"
-        
-        # Generate presigned URL with CORS headers
-        presigned_url = s3.generate_presigned_url(
-            'put_object',
-            Params={
-                'Bucket': bucket_name,
-                'Key': unique_filename,
-                'ContentType': content_type
-            },
-            ExpiresIn=3600
-        )
-        
-        # Return the presigned URL and the final public URL
-        public_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{unique_filename}"
-        
-        return jsonify({
-            "presignedUrl": presigned_url,
-            "publicUrl": public_url,
-            "filename": unique_filename
-        })
-        
-    except Exception as e:
-        logging.error(f"Error generating presigned URL: {e}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/test-upload-simple', methods=['POST'])
-def test_upload_simple():
-    """Minimal upload test without S3"""
-    try:
-        if 'file' not in request.files:
-            return jsonify({"error": "No file"}), 400
-        
-        file = request.files['file']
-        return jsonify({
-            "filename": file.filename,
-            "content_type": file.content_type,
-            "file_size": len(file.read()),
-            "env_check": {
-                "aws_key": "SET" if os.environ.get('AWS_ACCESS_KEY_ID') else "NOT SET",
-                "bucket": os.environ.get('S3_BUCKET_NAME', "NOT SET")
-            }
-        })
-    except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
