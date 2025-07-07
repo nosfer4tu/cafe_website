@@ -159,6 +159,7 @@
                 <input id="images" type="file" name="images[]" multiple accept="image/png, image/jpeg" style="display:none;">
             </div>
             <div class="upload-status" id="uploadStatus"></div>
+            <button type="button" onclick="testUpload()" style="margin: 10px; padding: 5px 10px; background-color: #007bff; color: white; border: none; border-radius: 5px;">Test Upload</button>
             <div class="cafe-details">
                 <label id="details" for="cafe_details"><strong>カフェ詳細</strong></label><br>
                 <textarea name="cafe_details" placeholder="カフェ詳細" rows="4" cols="50"></textarea>
@@ -197,6 +198,51 @@
         <script nomodule src="http://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap5-toggle@5.0.4/js/bootstrap5-toggle.j-query.min.js"></script>
         <script>
+        async function testUpload() {
+            const fileInput = document.getElementById('images');
+            const files = fileInput.files;
+            
+            if (files.length === 0) {
+                alert('Please select a file first');
+                return;
+            }
+            
+            const statusDiv = document.getElementById('uploadStatus');
+            statusDiv.style.display = 'block';
+            statusDiv.className = 'upload-status';
+            statusDiv.textContent = 'Testing upload...';
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', files[0]);
+                
+                const response = await fetch('/test-upload-simple', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const contentType = response.headers.get('content-type');
+                if (!contentType || !contentType.includes('application/json')) {
+                    const text = await response.text();
+                    console.error('Non-JSON response:', text);
+                    statusDiv.className = 'upload-status upload-error';
+                    statusDiv.textContent = `Test failed: Server returned non-JSON response (${response.status})`;
+                    return;
+                }
+                
+                const data = await response.json();
+                console.log('Test upload response:', data);
+                
+                statusDiv.className = 'upload-status upload-success';
+                statusDiv.textContent = `Test successful! Filename: ${data.filename}, AWS Key: ${data.env_check.aws_key}, Bucket: ${data.env_check.bucket}`;
+                
+            } catch (error) {
+                console.error('Test upload error:', error);
+                statusDiv.className = 'upload-status upload-error';
+                statusDiv.textContent = `Test failed: ${error.message}`;
+            }
+        }
+
         async function uploadImageToS3(file) {
             const formData = new FormData();
             formData.append('file', file);
