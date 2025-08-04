@@ -98,10 +98,13 @@ def user_has_cafes(user_id):
                     WHERE cafe_owner_id = %s
                 """, (user_id,))
                 result = cursor.fetchone()
-                return result['cafe_count'] > 0 if result else False
+                cafe_count = result['cafe_count'] if result else 0
+                print(f"User {user_id} has {cafe_count} cafes", flush=True)  # Debug line
+                return cafe_count > 0
     except Exception as e:
         logging.error(f"Error checking user cafes: {e}")
-        return False  # Return False if there's an error
+        print(f"Error in user_has_cafes: {e}", flush=True)  # Debug line
+        return False
 
 def hash_password(password, salt=None, iterations=310000):
     if salt is None:
@@ -208,7 +211,9 @@ def index():
         # Check if user has cafes
         user_has_cafes = False
         if "user_id" in session:
+            print(f"Checking cafes for user {session['user_id']}", flush=True)  # Debug line
             user_has_cafes = user_has_cafes(session["user_id"])
+            print(f"user_has_cafes result: {user_has_cafes}", flush=True)  # Debug line
 
         return render_template("index.html", records=records, user_has_cafes=user_has_cafes)
     except Exception as e:
