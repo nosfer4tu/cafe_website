@@ -200,8 +200,12 @@ def index():
             cursor.execute("SELECT * FROM cafes ORDER BY id")
             records = cursor.fetchall()
 
-    # No base64 encoding needed; image fields are URLs
-    return render_template("index.html", records=records)
+    # Check if user has cafes
+    user_has_cafes = False
+    if "user_id" in session:
+        user_has_cafes = user_has_cafes(session["user_id"])
+
+    return render_template("index.html", records=records, user_has_cafes=user_has_cafes)
 
 
 @app.route("/d/<int:cafes_id>", methods=["GET"])
@@ -222,12 +226,22 @@ def d(cafes_id):
         "image5": cafe['image5'] if cafe['image5'] else None,
     }]
 
-    return render_template("detail.html", record=cafe, images=images)
+    # Check if user has cafes
+    user_has_cafes = False
+    if "user_id" in session:
+        user_has_cafes = user_has_cafes(session["user_id"])
+
+    return render_template("detail.html", record=cafe, images=images, user_has_cafes=user_has_cafes)
 
 
 @app.route("/upload", methods=["GET"])
 def upload_get():
-    return render_template("upload.html")
+    # Check if user has cafes
+    user_has_cafes = False
+    if "user_id" in session:
+        user_has_cafes = user_has_cafes(session["user_id"])
+    
+    return render_template("upload.html", user_has_cafes=user_has_cafes)
 
 @app.route("/upload", methods=["POST"])
 def upload():
@@ -302,7 +316,12 @@ def b(user_id):
             cursor.execute(query_cafes)
             cafes = cursor.fetchall()
 
-    return render_template("booking_description.html", bookings=bookings, users=users, cafes=cafes)
+    # Check if user has cafes
+    user_has_cafes = False
+    if "user_id" in session:
+        user_has_cafes = user_has_cafes(session["user_id"])
+
+    return render_template("booking_description.html", bookings=bookings, users=users, cafes=cafes, user_has_cafes=user_has_cafes)
 
 @app.route("/booking", methods=["POST"])
 def booking():
