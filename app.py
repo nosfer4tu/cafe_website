@@ -90,14 +90,18 @@ def get_cafes_by_owner(user_id):
             return cursor.fetchall()
 
 def user_has_cafes(user_id):
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
-                SELECT COUNT(*) as cafe_count FROM cafes 
-                WHERE cafe_owner_id = %s
-            """, (user_id,))
-            result = cursor.fetchone()
-            return result['cafe_count'] > 0 if result else False
+    try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("""
+                    SELECT COUNT(*) as cafe_count FROM cafes 
+                    WHERE cafe_owner_id = %s
+                """, (user_id,))
+                result = cursor.fetchone()
+                return result['cafe_count'] > 0 if result else False
+    except Exception as e:
+        logging.error(f"Error checking user cafes: {e}")
+        return False  # Return False if there's an error
 
 def hash_password(password, salt=None, iterations=310000):
     if salt is None:
@@ -195,53 +199,65 @@ def register():
 
 @app.route("/", methods=["GET"])
 def index():
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM cafes ORDER BY id")
-            records = cursor.fetchall()
+    try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("SELECT * FROM cafes ORDER BY id")
+                records = cursor.fetchall()
 
-    # Check if user has cafes
-    user_has_cafes = False
-    if "user_id" in session:
-        user_has_cafes = user_has_cafes(session["user_id"])
+        # Check if user has cafes
+        user_has_cafes = False
+        if "user_id" in session:
+            user_has_cafes = user_has_cafes(session["user_id"])
 
-    return render_template("index.html", records=records, user_has_cafes=user_has_cafes)
+        return render_template("index.html", records=records, user_has_cafes=user_has_cafes)
+    except Exception as e:
+        logging.error(f"Error in index route: {e}")
+        return render_template("index.html", records=[], user_has_cafes=False)
 
 
 @app.route("/d/<int:cafes_id>", methods=["GET"])
 def d(cafes_id):
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("SELECT * FROM cafes WHERE id = %s", (cafes_id,))
-            cafe = cursor.fetchone()
+    try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute("SELECT * FROM cafes WHERE id = %s", (cafes_id,))
+                cafe = cursor.fetchone()
 
-    if cafe is None:
-        return "Cafe not found", 404
+        if cafe is None:
+            return "Cafe not found", 404
 
-    images = [{
-        "image1": cafe['image1'] if cafe['image1'] else None,
-        "image2": cafe['image2'] if cafe['image2'] else None,
-        "image3": cafe['image3'] if cafe['image3'] else None,
-        "image4": cafe['image4'] if cafe['image4'] else None,
-        "image5": cafe['image5'] if cafe['image5'] else None,
-    }]
+        images = [{
+            "image1": cafe['image1'] if cafe['image1'] else None,
+            "image2": cafe['image2'] if cafe['image2'] else None,
+            "image3": cafe['image3'] if cafe['image3'] else None,
+            "image4": cafe['image4'] if cafe['image4'] else None,
+            "image5": cafe['image5'] if cafe['image5'] else None,
+        }]
 
-    # Check if user has cafes
-    user_has_cafes = False
-    if "user_id" in session:
-        user_has_cafes = user_has_cafes(session["user_id"])
+        # Check if user has cafes
+        user_has_cafes = False
+        if "user_id" in session:
+            user_has_cafes = user_has_cafes(session["user_id"])
 
-    return render_template("detail.html", record=cafe, images=images, user_has_cafes=user_has_cafes)
+        return render_template("detail.html", record=cafe, images=images, user_has_cafes=user_has_cafes)
+    except Exception as e:
+        logging.error(f"Error in detail route: {e}")
+        return "Error loading cafe", 500
 
 
 @app.route("/upload", methods=["GET"])
 def upload_get():
-    # Check if user has cafes
-    user_has_cafes = False
-    if "user_id" in session:
-        user_has_cafes = user_has_cafes(session["user_id"])
-    
-    return render_template("upload.html", user_has_cafes=user_has_cafes)
+    try:
+        # Check if user has cafes
+        user_has_cafes = False
+        if "user_id" in session:
+            user_has_cafes = user_has_cafes(session["user_id"])
+        
+        return render_template("upload.html", user_has_cafes=user_has_cafes)
+    except Exception as e:
+        logging.error(f"Error in upload_get route: {e}")
+        return render_template("upload.html", user_has_cafes=False)
 
 @app.route("/upload", methods=["POST"])
 def upload():
@@ -294,34 +310,38 @@ def upload():
 
 @app.route("/b/<int:user_id>", methods=["GET"])
 def b(user_id):
-    query_bookings = """
-        SELECT bookings.user_id, users.username, cafes.cafe_name, bookings.date, bookings.time, bookings.num_people, bookings.user_id, bookings.cafe_id
-        FROM bookings
-        INNER JOIN cafes ON cafes.id = bookings.cafe_id
-        INNER JOIN users ON users.id = bookings.user_id
-        WHERE bookings.user_id = %s
-    """
-    query_users = "SELECT id, username FROM users"
-    query_cafes = """
-        SELECT id, cafe_name, zipcode, prefecture, municipality, opening_hours, description
-        FROM cafes
-    """
+    try:
+        query_bookings = """
+            SELECT bookings.user_id, users.username, cafes.cafe_name, bookings.date, bookings.time, bookings.num_people, bookings.user_id, bookings.cafe_id
+            FROM bookings
+            INNER JOIN cafes ON cafes.id = bookings.cafe_id
+            INNER JOIN users ON users.id = bookings.user_id
+            WHERE bookings.user_id = %s
+        """
+        query_users = "SELECT id, username FROM users"
+        query_cafes = """
+            SELECT id, cafe_name, zipcode, prefecture, municipality, opening_hours, description
+            FROM cafes
+        """
 
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute(query_bookings, (user_id,))
-            bookings = cursor.fetchall()
-            cursor.execute(query_users)
-            users = cursor.fetchall()
-            cursor.execute(query_cafes)
-            cafes = cursor.fetchall()
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                cursor.execute(query_bookings, (user_id,))
+                bookings = cursor.fetchall()
+                cursor.execute(query_users)
+                users = cursor.fetchall()
+                cursor.execute(query_cafes)
+                cafes = cursor.fetchall()
 
-    # Check if user has cafes
-    user_has_cafes = False
-    if "user_id" in session:
-        user_has_cafes = user_has_cafes(session["user_id"])
+        # Check if user has cafes
+        user_has_cafes = False
+        if "user_id" in session:
+            user_has_cafes = user_has_cafes(session["user_id"])
 
-    return render_template("booking_description.html", bookings=bookings, users=users, cafes=cafes, user_has_cafes=user_has_cafes)
+        return render_template("booking_description.html", bookings=bookings, users=users, cafes=cafes, user_has_cafes=user_has_cafes)
+    except Exception as e:
+        logging.error(f"Error in booking route: {e}")
+        return render_template("booking_description.html", bookings=[], users=[], cafes=[], user_has_cafes=False)
 
 @app.route("/booking", methods=["POST"])
 def booking():
