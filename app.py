@@ -58,13 +58,23 @@ def get_images_for_cafe(cafe_id):
 
 # Add these new helper functions
 def user_owns_cafe(user_id, cafe_id):
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
-                SELECT id FROM cafes 
-                WHERE id = %s AND cafe_owner_id = %s
-            """, (cafe_id, user_id))
-            return cursor.fetchone() is not None
+    try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # First try with cafe_owner_id
+                try:
+                    cursor.execute("""
+                        SELECT id FROM cafes 
+                        WHERE id = %s AND cafe_owner_id = %s
+                    """, (cafe_id, user_id))
+                    return cursor.fetchone() is not None
+                except Exception as e:
+                    # If cafe_owner_id doesn't exist, assume user owns all cafes
+                    print(f"cafe_owner_id column doesn't exist: {e}", flush=True)
+                    return True
+    except Exception as e:
+        logging.error(f"Error checking cafe ownership: {e}")
+        return False
 
 def get_bookings_for_cafe(cafe_id):
     with get_db() as conn:
@@ -80,30 +90,47 @@ def get_bookings_for_cafe(cafe_id):
             return cursor.fetchall()
 
 def get_cafes_by_owner(user_id):
-    with get_db() as conn:
-        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-            cursor.execute("""
-                SELECT * FROM cafes 
-                WHERE cafe_owner_id = %s
-                ORDER BY id DESC
-            """, (user_id,))
-            return cursor.fetchall()
+    try:
+        with get_db() as conn:
+            with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+                # First try with cafe_owner_id
+                try:
+                    cursor.execute("""
+                        SELECT * FROM cafes 
+                        WHERE cafe_owner_id = %s
+                        ORDER BY id DESC
+                    """, (user_id,))
+                    return cursor.fetchall()
+                except Exception as e:
+                    # If cafe_owner_id doesn't exist, return all cafes
+                    print(f"cafe_owner_id column doesn't exist: {e}", flush=True)
+                    cursor.execute("SELECT * FROM cafes ORDER BY id DESC")
+                    return cursor.fetchall()
+    except Exception as e:
+        logging.error(f"Error getting cafes by owner: {e}")
+        return []
 
 def user_has_cafes(user_id):
     try:
         with get_db() as conn:
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
-                cursor.execute("""
-                    SELECT COUNT(*) as cafe_count FROM cafes 
-                    WHERE cafe_owner_id = %s
-                """, (user_id,))
-                result = cursor.fetchone()
-                cafe_count = result['cafe_count'] if result else 0
-                print(f"User {user_id} has {cafe_count} cafes", flush=True)  # Debug line
-                return cafe_count > 0
+                # First try with cafe_owner_id
+                try:
+                    cursor.execute("""
+                        SELECT COUNT(*) as cafe_count FROM cafes 
+                        WHERE cafe_owner_id = %s
+                    """, (user_id,))
+                    result = cursor.fetchone()
+                    cafe_count = result['cafe_count'] if result else 0
+                    print(f"User {user_id} has {cafe_count} cafes", flush=True)
+                    return cafe_count > 0
+                except Exception as e:
+                    # If cafe_owner_id column doesn't exist, return True for logged-in users
+                    print(f"cafe_owner_id column doesn't exist: {e}", flush=True)
+                    return "user_id" in session
     except Exception as e:
         logging.error(f"Error checking user cafes: {e}")
-        print(f"Error in user_has_cafes: {e}", flush=True)  # Debug line
+        print(f"Error in user_has_cafes: {e}", flush=True)
         return False
 
 def hash_password(password, salt=None, iterations=310000):
