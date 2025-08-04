@@ -58,13 +58,13 @@
         
         .action-btn {
             margin: 2px;
-            padding: 5px 10px;
+            padding: 3px 8px;  /* Smaller padding */
             border: none;
             border-radius: 4px;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
-            font-size: 12px;
+            font-size: 11px;  /* Smaller font size */
         }
         
         .manage-btn { background-color: #28a745; color: white; }
@@ -81,6 +81,21 @@
             text-align: center;
             margin: 30px 0;
             color: #8e7035;
+        }
+        
+        /* Make forms more compact */
+        form {
+            margin: 0;
+            padding: 0;
+        }
+        
+        /* Smaller table cells */
+        #bookings td, #bookings th {
+            padding: 6px 8px;  /* Reduced padding */
+        }
+        
+        .cafe-table td, .cafe-table th {
+            padding: 6px 8px;  /* Reduced padding */
         }
     </style>
     <header class="own-container d-flex align-items-center">
@@ -190,16 +205,14 @@
                 </td>
                 <td>
                     {% if (booking.status or 'pending') == 'pending' %}
-                    <form method="POST" action="/manage-booking/{{ booking.id }}" style="display: inline; background-color: transparent;">
+                    <form method="POST" action="/manage-booking/{{ booking.id }}" style="display: inline;">
                         <button name="action" value="approve" class="action-btn approve-btn">承認</button>
                         <button name="action" value="reject" class="action-btn reject-btn">拒否</button>
                     </form>
                     {% endif %}
-                    {% if (booking.status or 'pending') != 'cancelled' %}
-                    <form method="POST" action="/manage-booking/{{ booking.id }}" style="display: inline; background-color: transparent;">
+                    <form method="POST" action="/manage-booking/{{ booking.id }}" style="display: inline;">
                         <button name="action" value="cancel" class="action-btn cancel-btn">キャンセル</button>
                     </form>
-                    {% endif %}
                 </td>
             </tr>
             {% endfor %}

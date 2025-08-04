@@ -458,10 +458,8 @@ def manage_booking(booking_id):
                 # Delete the booking completely
                 cursor.execute("DELETE FROM bookings WHERE id = %s", (booking_id,))
             elif action == "cancel":
-                # Mark as cancelled
-                cursor.execute("""
-                    UPDATE bookings SET status = 'cancelled' WHERE id = %s
-                """, (booking_id,))
+                # Delete the booking completely (same as reject)
+                cursor.execute("DELETE FROM bookings WHERE id = %s", (booking_id,))
             elif action == "approve":
                 # Mark as approved
                 cursor.execute("""
