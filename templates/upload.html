@@ -100,6 +100,8 @@
                 color: #721c24;
             }
         </style>
+    </head>
+    <body>
         <header class="own-container d-flex align-items-center">
                 <div class="logo d-flex align-items-center"><a href="/"><img src="../static/img/cafe.png" alt=""></a></div>
                 <!------------------------------------------------- add your cafe ---------------------------------------------------------------->
@@ -146,8 +148,6 @@
             <a href="/register" class="btn btn-secondary">登録</a>
         </div>
         {% else %}
-    </head>
-    <body>
         <div id="container"class="container">
             <form action="/upload" method="post" enctype="multipart/form-data">
                 <div class="cafe-name">
@@ -241,7 +241,6 @@
                     }
 
                     
-
                     // Show success status
                     statusDiv.className = 'upload-status upload-success';
                     statusDiv.textContent = `${imageUrls.length}個の画像がアップロードされました`;
@@ -276,5 +275,4 @@
             </script>
         </div>
     </body>
-    {% endif %}
 </html>
