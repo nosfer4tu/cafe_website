@@ -41,6 +41,9 @@
                         <li>
                             <hr class="dropdown-divider">
                         </li>
+                        {% if user_has_cafes %}
+                        <li><a class="dropdown-item" href="/my-cafes">カフェを管理する</a></li>
+                        {% endif %}
                         <li><a class="dropdown-item" href="/upload">カフェを掲載する</a></li>
                         <li><a class="dropdown-item" href="/b/{{ session.get('user_id') }}">予約を管理する</a></li>
                         {% else %}

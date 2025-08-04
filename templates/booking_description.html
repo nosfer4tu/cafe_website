@@ -64,6 +64,7 @@
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
+            font-size: 12px;
         }
         
         .manage-btn { background-color: #28a745; color: white; }
@@ -109,7 +110,9 @@
                             <li>
                                 <hr class="dropdown-divider">
                             </li>
-                            <li><a class="dropdown-item" href="/my-cafes">My Cafes</a></li>
+                            {% if user_has_cafes %}
+                            <li><a class="dropdown-item" href="/my-cafes">カフェを管理する</a></li>
+                            {% endif %}
                             <li><a class="dropdown-item" href="/upload">カフェを掲載する</a></li>
                             <li><a class="dropdown-item" href="/b/{{ session.get('user_id') }}">予約を管理する</a></li>
                             {% else %}
@@ -133,7 +136,7 @@
 </head>
 <body>
     {% if is_cafe_owner and cafes %}
-        <h1 class="page-title">My Cafes</h1>
+        <h1 class="page-title">管理中のカフェ</h1>
         <table class="cafe-table">
             <tr>
                 <th>Cafe Name</th>
@@ -147,16 +150,16 @@
                 <td>{{ cafe.prefecture }}, {{ cafe.municipality }}</td>
                 <td>{{ cafe.opening_hours }}</td>
                 <td>
-                    <a href="/cafe-bookings/{{ cafe.id }}" class="action-btn manage-btn">Manage Bookings</a>
+                    <a href="/cafe-bookings/{{ cafe.id }}" class="action-btn manage-btn">予約を管理する</a>
                 </td>
             </tr>
             {% endfor %}
         </table>
     {% elif is_cafe_owner and cafe_management and cafe %}
-        <h1 class="page-title">Manage Bookings for {{ cafe.cafe_name }}</h1>
+        <h1 class="page-title">{{ cafe.cafe_name }}の予約を管理する</h1>
         <div style="margin-left: 100px; margin-top: 20px;">
-            <p><strong>Location:</strong> {{ cafe.prefecture }}, {{ cafe.municipality }}</p>
-            <p><strong>Opening Hours:</strong> {{ cafe.opening_hours }}</p>
+            <p><strong>住所:</strong> {{ cafe.prefecture }}, {{ cafe.municipality }}</p>
+            <p><strong>開店時間s:</strong> {{ cafe.opening_hours }}</p>
         </div>
         {% if bookings %}
         <table id="bookings">
@@ -174,23 +177,35 @@
                 <td>{{ booking.date }}</td>
                 <td>{{ booking.time }}</td>
                 <td>{{ booking.num_people }}</td>
-                <td class="status-{{ booking.status or 'pending' }}">{{ booking.status or 'pending' }}</td>
+                <td class="status-{{ booking.status or 'pending' }}">
+                    {% if booking.status == 'approved' %}
+                        承認済み
+                    {% elif booking.status == 'rejected' %}
+                        拒否済み
+                    {% elif booking.status == 'cancelled' %}
+                        キャンセル済み
+                    {% else %}
+                        保留中
+                    {% endif %}
+                </td>
                 <td>
                     {% if (booking.status or 'pending') == 'pending' %}
-                    <form method="POST" action="/manage-booking/{{ booking.id }}" style="display: inline;">
-                        <button name="action" value="approve" class="action-btn approve-btn">Approve</button>
-                        <button name="action" value="reject" class="action-btn reject-btn">Reject</button>
+                    <form method="POST" action="/manage-booking/{{ booking.id }}" style="display: inline; background-color: transparent;">
+                        <button name="action" value="approve" class="action-btn approve-btn">承認</button>
+                        <button name="action" value="reject" class="action-btn reject-btn">拒否</button>
                     </form>
                     {% endif %}
-                    <form method="POST" action="/manage-booking/{{ booking.id }}" style="display: inline;">
-                        <button name="action" value="cancel" class="action-btn cancel-btn">Cancel</button>
+                    {% if (booking.status or 'pending') != 'cancelled' %}
+                    <form method="POST" action="/manage-booking/{{ booking.id }}" style="display: inline; background-color: transparent;">
+                        <button name="action" value="cancel" class="action-btn cancel-btn">キャンセル</button>
                     </form>
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
         </table>
         {% else %}
-        <p style="margin-left: 100px; margin-top: 50px;">No bookings for this cafe yet.</p>
+        <p style="margin-left: 100px; margin-top: 50px;">このカフェにはまだ予約がありません。</p>
         {% endif %}
     {% elif bookings %}
         <h1 class="page-title">My Bookings</h1>

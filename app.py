@@ -89,6 +89,16 @@ def get_cafes_by_owner(user_id):
             """, (user_id,))
             return cursor.fetchall()
 
+def user_has_cafes(user_id):
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT COUNT(*) as cafe_count FROM cafes 
+                WHERE cafe_owner_id = %s
+            """, (user_id,))
+            result = cursor.fetchone()
+            return result['cafe_count'] > 0 if result else False
+
 def hash_password(password, salt=None, iterations=310000):
     if salt is None:
         salt = secrets.token_hex(16)
@@ -367,10 +377,21 @@ def manage_booking(booking_id):
             if not booking or not user_owns_cafe(session["user_id"], booking["cafe_id"]):
                 return "Unauthorized", 403
             
-            # Update booking status
-            cursor.execute("""
-                UPDATE bookings SET status = %s WHERE id = %s
-            """, (action, booking_id))
+            # Handle different actions
+            if action == "reject":
+                # Delete the booking completely
+                cursor.execute("DELETE FROM bookings WHERE id = %s", (booking_id,))
+            elif action == "cancel":
+                # Mark as cancelled
+                cursor.execute("""
+                    UPDATE bookings SET status = 'cancelled' WHERE id = %s
+                """, (booking_id,))
+            elif action == "approve":
+                # Mark as approved
+                cursor.execute("""
+                    UPDATE bookings SET status = 'approved' WHERE id = %s
+                """, (booking_id,))
+            
         conn.commit()
     
     return redirect(url_for("cafe_bookings", cafe_id=booking["cafe_id"]))
