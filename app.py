@@ -56,6 +56,39 @@ def get_images_for_cafe(cafe_id):
             images = cursor.fetchall()
     return images
 
+# Add these new helper functions
+def user_owns_cafe(user_id, cafe_id):
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT id FROM cafes 
+                WHERE id = %s AND cafe_owner_id = %s
+            """, (cafe_id, user_id))
+            return cursor.fetchone() is not None
+
+def get_bookings_for_cafe(cafe_id):
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT bookings.*, users.username, cafes.cafe_name
+                FROM bookings
+                INNER JOIN users ON users.id = bookings.user_id
+                INNER JOIN cafes ON cafes.id = bookings.cafe_id
+                WHERE bookings.cafe_id = %s
+                ORDER BY bookings.created_at DESC
+            """, (cafe_id,))
+            return cursor.fetchall()
+
+def get_cafes_by_owner(user_id):
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT * FROM cafes 
+                WHERE cafe_owner_id = %s
+                ORDER BY id DESC
+            """, (user_id,))
+            return cursor.fetchall()
+
 def hash_password(password, salt=None, iterations=310000):
     if salt is None:
         salt = secrets.token_hex(16)
@@ -188,6 +221,9 @@ def upload_get():
 
 @app.route("/upload", methods=["POST"])
 def upload():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    
     print("Form keys:", list(request.form.keys()), flush=True)
     print("image_urls raw:", request.form.get("image_urls"), flush=True)
     cafe_name = request.form["cafe_name"]
@@ -208,8 +244,8 @@ def upload():
             with conn.cursor() as cursor:
                 cursor.execute(
                     """
-                    INSERT INTO cafes (cafe_name, zipcode, prefecture, municipality, opening_hours, description, image1, image2, image3, image4, image5)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO cafes (cafe_name, zipcode, prefecture, municipality, opening_hours, description, image1, image2, image3, image4, image5, cafe_owner_id)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         cafe_name,
@@ -223,6 +259,7 @@ def upload():
                         image3,
                         image4,
                         image5,
+                        session["user_id"],  # Add cafe owner
                     ),
                 )
             conn.commit()
@@ -284,6 +321,59 @@ def booking():
 @app.route("/confirmation", methods=["GET"])
 def confirmation():
     return render_template("confirmation.html")
+
+# Add these new routes
+@app.route("/my-cafes")
+def my_cafes():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    
+    my_cafes = get_cafes_by_owner(session["user_id"])
+    return render_template("booking_description.html", cafes=my_cafes, is_cafe_owner=True)
+
+@app.route("/cafe-bookings/<int:cafe_id>")
+def cafe_bookings(cafe_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    
+    if not user_owns_cafe(session["user_id"], cafe_id):
+        return "Unauthorized", 403
+    
+    cafe = get_cafe_by_id(cafe_id)
+    bookings = get_bookings_for_cafe(cafe_id)
+    
+    return render_template("booking_description.html", 
+                        cafe=cafe, 
+                        bookings=bookings, 
+                        is_cafe_owner=True, 
+                        cafe_management=True)
+
+@app.route("/manage-booking/<int:booking_id>", methods=["POST"])
+def manage_booking(booking_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    
+    action = request.form.get("action")  # approve, reject, cancel
+    booking_id = int(booking_id)
+    
+    # Get the booking to find the cafe
+    with get_db() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cursor:
+            cursor.execute("""
+                SELECT cafe_id FROM bookings WHERE id = %s
+            """, (booking_id,))
+            booking = cursor.fetchone()
+            
+            if not booking or not user_owns_cafe(session["user_id"], booking["cafe_id"]):
+                return "Unauthorized", 403
+            
+            # Update booking status
+            cursor.execute("""
+                UPDATE bookings SET status = %s WHERE id = %s
+            """, (action, booking_id))
+        conn.commit()
+    
+    return redirect(url_for("cafe_bookings", cafe_id=booking["cafe_id"]))
 
 def upload_to_s3(file):
     """
