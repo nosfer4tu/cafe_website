@@ -475,7 +475,6 @@ def upload_to_s3(file):
     Upload a file to AWS S3 and return the public URL
     """
     try:
-        # Get AWS credentials from environment
         aws_access_key = os.environ.get('AWS_ACCESS_KEY_ID')
         aws_secret_key = os.environ.get('AWS_SECRET_ACCESS_KEY')
         bucket_name = os.environ.get('S3_BUCKET_NAME')
@@ -484,7 +483,6 @@ def upload_to_s3(file):
         if not all([aws_access_key, aws_secret_key, bucket_name]):
             raise ValueError("AWS credentials not properly configured. Please set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and S3_BUCKET_NAME environment variables.")
         
-        # Create S3 client
         s3 = boto3.client(
             's3',
             aws_access_key_id=aws_access_key,
@@ -492,12 +490,10 @@ def upload_to_s3(file):
             region_name=region
         )
         
-        # Generate unique filename
         filename = secure_filename(file.filename)
         unique_filename = f"{uuid.uuid4()}_{filename}"
         
-        # Upload file
-        file.seek(0)  # Reset file pointer
+        file.seek(0) 
         s3.upload_fileobj(
             file, 
             bucket_name, 
@@ -507,7 +503,6 @@ def upload_to_s3(file):
             }
         )
         
-        # Return public URL
         file_url = f"https://{bucket_name}.s3.{region}.amazonaws.com/{unique_filename}"
         return file_url
         
@@ -533,13 +528,11 @@ def save_url_to_neon(file_url, cafe_id=None):
         with get_db() as conn:
             with conn.cursor() as cursor:
                 if cafe_id:
-                    # Update existing cafe with image URL
                     cursor.execute(
                         "UPDATE cafes SET image1 = %s WHERE id = %s",
                         (file_url, cafe_id)
                     )
                 else:
-                    # For testing purposes, you could create a separate images table
                     cursor.execute(
                         "INSERT INTO image_urls (url, created_at) VALUES (%s, NOW())",
                         (file_url,)
@@ -563,7 +556,6 @@ def upload_file_server():
         if file.filename == '':
             return jsonify({"error": "No file selected"}), 400
         
-        # Upload to S3 through server
         file_url = upload_to_s3(file)
         
         return jsonify({"url": file_url, "success": True})
