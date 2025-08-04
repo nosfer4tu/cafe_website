@@ -244,8 +244,8 @@ def upload():
             with conn.cursor() as cursor:
                 cursor.execute(
                     """
-                    INSERT INTO cafes (cafe_name, zipcode, prefecture, municipality, opening_hours, description, image1, image2, image3, image4, image5, cafe_owner_id)
-                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    INSERT INTO cafes (cafe_name, zipcode, prefecture, municipality, opening_hours, description, image1, image2, image3, image4, image5)
+                    VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """,
                     (
                         cafe_name,
@@ -259,7 +259,6 @@ def upload():
                         image3,
                         image4,
                         image5,
-                        session["user_id"],  # Add cafe owner
                     ),
                 )
             conn.commit()
