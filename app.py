@@ -234,17 +234,22 @@ def index():
             with conn.cursor(cursor_factory=RealDictCursor) as cursor:
                 cursor.execute("SELECT * FROM cafes ORDER BY id")
                 records = cursor.fetchall()
+                print(f"Found {len(records)} cafes in database", flush=True)
 
         # Check if user has cafes
-        user_has_cafes = False
+        user_has_cafes_var = False  # Changed variable name
         if "user_id" in session:
-            print(f"Checking cafes for user {session['user_id']}", flush=True)  # Debug line
-            user_has_cafes = user_has_cafes(session["user_id"])
-            print(f"user_has_cafes result: {user_has_cafes}", flush=True)  # Debug line
+            print(f"User {session['user_id']} is logged in", flush=True)
+            user_has_cafes_var = user_has_cafes(session["user_id"])  # Call the function
+            print(f"user_has_cafes result: {user_has_cafes_var}", flush=True)
+        else:
+            print("No user logged in", flush=True)
 
-        return render_template("index.html", records=records, user_has_cafes=user_has_cafes)
+        print(f"Passing {len(records)} cafes to template", flush=True)
+        return render_template("index.html", records=records, user_has_cafes=user_has_cafes_var)
     except Exception as e:
         logging.error(f"Error in index route: {e}")
+        print(f"Error in index route: {e}", flush=True)
         return render_template("index.html", records=[], user_has_cafes=False)
 
 
@@ -268,11 +273,11 @@ def d(cafes_id):
         }]
 
         # Check if user has cafes
-        user_has_cafes = False
+        user_has_cafes_var = False
         if "user_id" in session:
-            user_has_cafes = user_has_cafes(session["user_id"])
+            user_has_cafes_var = user_has_cafes(session["user_id"])
 
-        return render_template("detail.html", record=cafe, images=images, user_has_cafes=user_has_cafes)
+        return render_template("detail.html", record=cafe, images=images, user_has_cafes=user_has_cafes_var)
     except Exception as e:
         logging.error(f"Error in detail route: {e}")
         return "Error loading cafe", 500
@@ -282,11 +287,11 @@ def d(cafes_id):
 def upload_get():
     try:
         # Check if user has cafes
-        user_has_cafes = False
+        user_has_cafes_var = False
         if "user_id" in session:
-            user_has_cafes = user_has_cafes(session["user_id"])
+            user_has_cafes_var = user_has_cafes(session["user_id"])
         
-        return render_template("upload.html", user_has_cafes=user_has_cafes)
+        return render_template("upload.html", user_has_cafes=user_has_cafes_var)
     except Exception as e:
         logging.error(f"Error in upload_get route: {e}")
         return render_template("upload.html", user_has_cafes=False)
@@ -366,11 +371,11 @@ def b(user_id):
                 cafes = cursor.fetchall()
 
         # Check if user has cafes
-        user_has_cafes = False
+        user_has_cafes_var = False
         if "user_id" in session:
-            user_has_cafes = user_has_cafes(session["user_id"])
+            user_has_cafes_var = user_has_cafes(session["user_id"])
 
-        return render_template("booking_description.html", bookings=bookings, users=users, cafes=cafes, user_has_cafes=user_has_cafes)
+        return render_template("booking_description.html", bookings=bookings, users=users, cafes=cafes, user_has_cafes=user_has_cafes_var)
     except Exception as e:
         logging.error(f"Error in booking route: {e}")
         return render_template("booking_description.html", bookings=[], users=[], cafes=[], user_has_cafes=False)
