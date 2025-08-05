@@ -58,13 +58,13 @@
         
         .action-btn {
             margin: 2px;
-            padding: 3px 8px;  /* Smaller padding */
+            padding: 3px 8px;
             border: none;
             border-radius: 4px;
             cursor: pointer;
             text-decoration: none;
             display: inline-block;
-            font-size: 11px;  /* Smaller font size */
+            font-size: 11px;
         }
         
         .manage-btn { background-color: #28a745; color: white; }
@@ -83,6 +83,61 @@
             color: #8e7035;
         }
         
+        /* Status card styles */
+        .status-card {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-approved {
+            border-left: 5px solid #28a745;
+            background-color: #d4edda;
+        }
+        
+        .status-rejected {
+            border-left: 5px solid #dc3545;
+            background-color: #f8d7da;
+        }
+        
+        .status-cancelled {
+            border-left: 5px solid #6c757d;
+            background-color: #e2e3e5;
+        }
+        
+        .status-pending {
+            border-left: 5px solid #ffc107;
+            background-color: #fff3cd;
+        }
+        
+        .status-icon {
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .booking-details {
+            margin-top: 20px;
+        }
+        
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #666;
+        }
+        
+        .detail-value {
+            color: #333;
+        }
+        
         /* Make forms more compact */
         form {
             margin: 0;
@@ -91,11 +146,11 @@
         
         /* Smaller table cells */
         #bookings td, #bookings th {
-            padding: 6px 8px;  /* Reduced padding */
+            padding: 6px 8px;
         }
         
         .cafe-table td, .cafe-table th {
-            padding: 6px 8px;  /* Reduced padding */
+            padding: 6px 8px;
         }
     </style>
     <header class="own-container d-flex align-items-center">
@@ -228,6 +283,7 @@
                 <th>Date</th>
                 <th>Time</th>
                 <th>Number of People</th>
+                <th>Status</th>
             </tr>
             {% for booking in bookings %}
             <tr>
@@ -235,9 +291,75 @@
                 <td>{{ booking['date'] }}</td>
                 <td>{{ booking['time'] }}</td>
                 <td>{{ booking['num_people'] }}</td>
+                <td class="status-{{ booking.status or 'pending' }}">
+                    {% if booking.status == 'approved' %}
+                        <span style="color: #28a745; font-size: 18px;">✓</span> 承認済み
+                    {% elif booking.status == 'rejected' %}
+                        <span style="color: #dc3545; font-size: 18px;">✗</span> 拒否済み
+                    {% elif booking.status == 'cancelled' %}
+                        <span style="color: #6c757d; font-size: 18px;">⊘</span> キャンセル済み
+                    {% else %}
+                        <span style="color: #ffc107; font-size: 18px;">⏳</span> 保留中
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </table>
+        
+        <!-- Status Summary Cards -->
+        <div style="margin: 50px 100px;">
+            <h3>予約状況サマリー</h3>
+            <div style="display: flex; gap: 20px; margin-top: 20px;">
+                {% set pending_count = 0 %}
+                {% set approved_count = 0 %}
+                {% set rejected_count = 0 %}
+                {% set cancelled_count = 0 %}
+                
+                {% for booking in bookings %}
+                    {% if booking.status == 'approved' %}
+                        {% set approved_count = approved_count + 1 %}
+                    {% elif booking.status == 'rejected' %}
+                        {% set rejected_count = rejected_count + 1 %}
+                    {% elif booking.status == 'cancelled' %}
+                        {% set cancelled_count = cancelled_count + 1 %}
+                    {% else %}
+                        {% set pending_count = pending_count + 1 %}
+                    {% endif %}
+                {% endfor %}
+                
+                <div class="status-card status-pending" style="flex: 1; text-align: center;">
+                    <div class="status-icon">
+                        <span style="color: #ffc107;">⏳</span>
+                    </div>
+                    <h4>保留中</h4>
+                    <h2>{{ pending_count }}</h2>
+                </div>
+                
+                <div class="status-card status-approved" style="flex: 1; text-align: center;">
+                    <div class="status-icon">
+                        <span style="color: #28a745;">✓</span>
+                    </div>
+                    <h4>承認済み</h4>
+                    <h2>{{ approved_count }}</h2>
+                </div>
+                
+                <div class="status-card status-rejected" style="flex: 1; text-align: center;">
+                    <div class="status-icon">
+                        <span style="color: #dc3545;">✗</span>
+                    </div>
+                    <h4>拒否済み</h4>
+                    <h2>{{ rejected_count }}</h2>
+                </div>
+                
+                <div class="status-card status-cancelled" style="flex: 1; text-align: center;">
+                    <div class="status-icon">
+                        <span style="color: #6c757d;">⊘</span>
+                    </div>
+                    <h4>キャンセル済み</h4>
+                    <h2>{{ cancelled_count }}</h2>
+                </div>
+            </div>
+        </div>
     {% else %}
         <p style="margin-left: 100px; margin-top: 50px;">まだ予約がありません。</p>
     {% endif %}
