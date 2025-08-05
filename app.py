@@ -349,7 +349,7 @@ def upload():
 def b(user_id):
     try:
         query_bookings = """
-            SELECT bookings.user_id, users.username, cafes.cafe_name, bookings.date, bookings.time, bookings.num_people, bookings.user_id, bookings.cafe_id
+            SELECT bookings.user_id, users.username, cafes.cafe_name, bookings.date, bookings.time, bookings.num_people, bookings.user_id, bookings.cafe_id, bookings.status
             FROM bookings
             INNER JOIN cafes ON cafes.id = bookings.cafe_id
             INNER JOIN users ON users.id = bookings.user_id
